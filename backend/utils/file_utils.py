@@ -36,7 +36,7 @@ try:
     from PyPDF2 import PdfReader
     from sentence_transformers import SentenceTransformer
     DOC_SUPPORT = True
-    text_model = SentenceTransformer("all-MiniLM-L6-v2")
+    text_model = SentenceTransformer("/app/models/all-MiniLM-L6-v2")
 except ImportError:
     DOC_SUPPORT = False
     text_model = None
