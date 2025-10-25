@@ -3,7 +3,7 @@ import os
 import threading
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from utils.reminders_manager import reminder_scheduler, send_email as send_email_smtp
+from utils.reminders_manager import reminder_scheduler, send_message_via_appwrite
 from routes.projects import projects_bp
 from routes.duplicates import duplicates_bp
 from routes.delete_account import delete_account_bp
@@ -35,7 +35,7 @@ def create_app():
     def send_mail_endpoint():
         data = request.get_json(force=True)
         try:
-            send_email_smtp(
+            send_message_via_appwrite(
                 to_email=data.get("to"),
                 subject=data.get("subject"),
                 message=data.get("message")
