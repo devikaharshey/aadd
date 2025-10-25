@@ -17,7 +17,6 @@ try:
 except Exception as e:
     print(f"[Warning] Could not load model from Hugging Face Hub: {e}")
     print("Attempting to load from local path './models/all-MiniLM-L6-v2'...")
-    # fallback if model manually added inside project
     model = SentenceTransformer("./models/all-MiniLM-L6-v2")
 
 
