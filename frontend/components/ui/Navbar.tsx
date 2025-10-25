@@ -18,6 +18,7 @@ import {
   LayoutDashboard,
   ChevronDown,
   Sprout,
+  BookOpen,
 } from "lucide-react";
 
 const BUCKET_ID =
@@ -88,6 +89,7 @@ export default function Navbar() {
     { href: "/", label: "Home", icon: Home },
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/ai-garden", label: "AI Garden", icon: Sprout },
+    { href: "/user-guide", label: "User Guide", icon: BookOpen },
   ];
 
   return (

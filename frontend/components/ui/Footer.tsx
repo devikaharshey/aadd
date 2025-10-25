@@ -44,13 +44,19 @@ export default function Footer() {
           >
             AI Garden
           </Link>
+          <Link
+            href="/user-guide"
+            className="hover:text-primary transition-colors"
+          >
+            User Guide
+          </Link>
         </div>
 
         {/* Right Section — Social Icons */}
         <div className="flex items-center gap-4">
           <motion.a
             whileHover={{ scale: 1.1 }}
-            href="https://github.com/devikaharshey/devikaharshey"
+            href="https://github.com/"
             target="_blank"
             rel="noopener noreferrer"
             className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-primary transition-colors"
