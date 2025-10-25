@@ -4,17 +4,14 @@ from datetime import datetime, timedelta, timezone
 from utils.appwrite_client import get_database_client, get_appwrite_client
 from appwrite.query import Query
 from appwrite.services.users import Users
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+from appwrite.services.messaging import Messaging
 
 APPWRITE_DATABASE_ID = os.getenv("APPWRITE_DATABASE_ID", "default")
 USER_PROJECTS_COLLECTION = os.getenv("APPWRITE_USER_PROJECTS_COLLECTION", "user_projects")
 REMINDER_COLLECTION = os.getenv("APPWRITE_REMINDER_COLLECTION", "reminders")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5000")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")  
-
-SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
-SENDER_EMAIL = os.getenv("SENDER_EMAIL")
+MESSAGING_TOPIC_ID = os.getenv("MESSAGING_TOPIC_ID")
 
 SCHEDULE_MAP = {
     "30min": 30 * 60,       
@@ -35,24 +32,22 @@ def get_user_email(user_id: str) -> str | None:
         print(f"Error fetching email for user {user_id}: {e}")
         return None
 
-def send_email(to_email: str, subject: str, message: str):
+def send_message_via_appwrite(to_email: str, subject: str, message: str):
+    """Send reminder via Appwrite Messaging instead of email"""
     try:
-        if not SENDGRID_API_KEY or not SENDER_EMAIL:
-            print("❌ SendGrid credentials not configured")
-            return
-
-        mail = Mail(
-            from_email=SENDER_EMAIL,
-            to_emails=to_email,
-            subject=subject,
-            html_content=message
+        client = get_appwrite_client()
+        messaging = Messaging(client)
+        messaging.create_message(  # type: ignore
+            topic_id=MESSAGING_TOPIC_ID,
+            to=[to_email],
+            payload={
+                "subject": subject,
+                "message": message
+            }
         )
-        sg = SendGridAPIClient(SENDGRID_API_KEY)
-        sg.send(mail)
-        print(f"📧 Email sent to {to_email}")
-
+        print(f"📧 Reminder sent via Appwrite Messaging to {to_email}")
     except Exception as e:
-        print(f"❌ Failed to send email: {e}")
+        print(f"❌ Failed to send message via Appwrite: {e}")
 
 def run_scan_reminder(reminder):
     """Perform duplicate scan for a project when reminder triggers."""
@@ -95,30 +90,19 @@ def run_scan_reminder(reminder):
             if service == "database" and database_id:
                 duplicates_url += f"?databaseId={database_id}"
 
-            send_email(
+            send_message_via_appwrite(
                 to_email=email,
                 subject=f"Appwrite AI Duplicates Detector (Reminder) 🔔 | Duplicate Scan Completed for Project - {project_id}",
                 message = f"""
-                        <html>
-                            <body>
-                                <h2>Your {freq} Duplicate Scan Completed ✅</h2>
-                                <p><strong>Project ID:</strong> {project_id}<br>
-                                <strong>Service:</strong> {service.capitalize()}</p>
-                                <h3>📄 Scan Results:</h3>
-                                <ul>
-                                <li>Total duplicates found: {res_data.get('duplicates_found', 0)}</li>
-                                </ul>
-                                <p>You can view full details and manage your projects here: 
-                                <a href="{FRONTEND_URL}/dashboard">Dashboard</a></p>
-                                <p>For re-running the scan manually and managing duplicates associated with this project (ID: {project_id}), visit:
-                                <a href="{duplicates_url}">Duplicates Page</a></p>
-                                <br>
-                                <p>Thank you,<br><a href="{FRONTEND_URL}">Appwrite AI Duplicates Detector (AADD)</a></p>
-                            </body>
-                        </html>
+                        Your {freq} Duplicate Scan Completed ✅
+                        Project ID: {project_id}
+                        Service: {service.capitalize()}
+                        Total duplicates found: {res_data.get('duplicates_found', 0)}
+                        View details: {FRONTEND_URL}/dashboard
+                        Re-run scan: {duplicates_url}
+                        Thank you, Appwrite AI Duplicates Detector (AADD)
                         """
             )
-            print(f"📧 Reminder email sent to {email}")
 
         db = get_database_client()
         db.update_document(
