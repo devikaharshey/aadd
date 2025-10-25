@@ -4,22 +4,25 @@ from datetime import datetime, timedelta, timezone
 from utils.appwrite_client import get_database_client, get_appwrite_client
 from appwrite.query import Query
 from appwrite.services.users import Users
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 APPWRITE_DATABASE_ID = os.getenv("APPWRITE_DATABASE_ID", "default")
 USER_PROJECTS_COLLECTION = os.getenv("APPWRITE_USER_PROJECTS_COLLECTION", "user_projects")
 REMINDER_COLLECTION = os.getenv("APPWRITE_REMINDER_COLLECTION", "reminders")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5000")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")  
-MESSAGING_TOPIC_ID = os.getenv("MESSAGING_TOPIC_ID")
+
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+SENDER_EMAIL = os.getenv("SENDER_EMAIL")
 
 SCHEDULE_MAP = {
-    "30min": 30 * 60,
-    "hourly": 60 * 60,
-    "daily": 24 * 60 * 60,
-    "weekly": 7 * 24 * 60 * 60,
-    "monthly": 30 * 24 * 60 * 60
+    "30min": 30 * 60,       
+    "hourly": 60 * 60,      
+    "daily": 24 * 60 * 60,   
+    "weekly": 7 * 24 * 60 * 60,    
+    "monthly": 30 * 24 * 60 * 60   
 }
-
 
 def get_user_email(user_id: str) -> str | None:
     """Fetch the user’s email from Appwrite using userId"""
@@ -29,33 +32,27 @@ def get_user_email(user_id: str) -> str | None:
         user = users_service.get(user_id)
         return user.get("email")
     except Exception as e:
-        print(f"❌ Error fetching email for user {user_id}: {e}")
+        print(f"Error fetching email for user {user_id}: {e}")
         return None
 
-
-def send_message_via_appwrite(to_email: str, subject: str, message: str):
-    """Send reminder via Appwrite Messaging REST API"""
+def send_email(to_email: str, subject: str, message: str):
     try:
-        url = f"{os.getenv('APPWRITE_ENDPOINT')}/messaging/messages"
-        headers = {
-            "X-Appwrite-Project": os.getenv("APPWRITE_PROJECT"),
-            "X-Appwrite-Key": os.getenv("APPWRITE_API_KEY"),
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "topic": MESSAGING_TOPIC_ID,
-            "recipients": [to_email],
-            "payload": {
-                "subject": subject,
-                "body": message
-            }
-        }
-        response = requests.post(url, headers=headers, json=payload)
-        response.raise_for_status()
-        print(f"📧 Reminder sent via Appwrite Messaging to {to_email}")
-    except Exception as e:
-        print(f"❌ Failed to send message via Appwrite: {e}")
+        if not SENDGRID_API_KEY or not SENDER_EMAIL:
+            print("❌ SendGrid credentials not configured")
+            return
 
+        mail = Mail(
+            from_email=SENDER_EMAIL,
+            to_emails=to_email,
+            subject=subject,
+            html_content=message
+        )
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        sg.send(mail)
+        print(f"📧 Email sent to {to_email}")
+
+    except Exception as e:
+        print(f"❌ Failed to send email: {e}")
 
 def run_scan_reminder(reminder):
     """Perform duplicate scan for a project when reminder triggers."""
@@ -73,14 +70,14 @@ def run_scan_reminder(reminder):
             "projectId": project_id,
             "service": service
         }
-
+        
         if service == "database":
             database_id = reminder.get("databaseId")
             if not database_id:
                 print(f"❌ Missing databaseId for database scan reminder {reminder['$id']}")
                 return
             payload["databaseId"] = database_id
-
+            
             collection_id = reminder.get("collectionId")
             if collection_id:
                 payload["collectionId"] = collection_id
@@ -98,19 +95,30 @@ def run_scan_reminder(reminder):
             if service == "database" and database_id:
                 duplicates_url += f"?databaseId={database_id}"
 
-            send_message_via_appwrite(
+            send_email(
                 to_email=email,
                 subject=f"Appwrite AI Duplicates Detector (Reminder) 🔔 | Duplicate Scan Completed for Project - {project_id}",
-                message=f"""
-Your {freq} Duplicate Scan Completed ✅
-Project ID: {project_id}
-Service: {service.capitalize()}
-Total duplicates found: {res_data.get('duplicates_found', 0)}
-View details: {FRONTEND_URL}/dashboard
-Re-run scan: {duplicates_url}
-Thank you, Appwrite AI Duplicates Detector (AADD)
-"""
+                message = f"""
+                        <html>
+                            <body>
+                                <h2>Your {freq} Duplicate Scan Completed ✅</h2>
+                                <p><strong>Project ID:</strong> {project_id}<br>
+                                <strong>Service:</strong> {service.capitalize()}</p>
+                                <h3>📄 Scan Results:</h3>
+                                <ul>
+                                <li>Total duplicates found: {res_data.get('duplicates_found', 0)}</li>
+                                </ul>
+                                <p>You can view full details and manage your projects here: 
+                                <a href="{FRONTEND_URL}/dashboard">Dashboard</a></p>
+                                <p>For re-running the scan manually and managing duplicates associated with this project (ID: {project_id}), visit:
+                                <a href="{duplicates_url}">Duplicates Page</a></p>
+                                <br>
+                                <p>Thank you,<br><a href="{FRONTEND_URL}">Appwrite AI Duplicates Detector (AADD)</a></p>
+                            </body>
+                        </html>
+                        """
             )
+            print(f"📧 Reminder email sent to {email}")
 
         db = get_database_client()
         db.update_document(
@@ -123,7 +131,6 @@ Thank you, Appwrite AI Duplicates Detector (AADD)
 
     except Exception as e:
         print(f"❌ Error running reminder: {e}")
-
 
 def reminder_scheduler():
     """Background scheduler thread that periodically checks reminders and runs them on time."""
@@ -138,7 +145,7 @@ def reminder_scheduler():
                 queries=[Query.equal("enabled", True)]
             ).get("documents", [])
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(timezone.utc)  
             next_run_times = []
 
             for reminder in reminders:
@@ -169,10 +176,11 @@ def reminder_scheduler():
 
                 next_run_times.append(next_run)
 
-            sleep_seconds = 60
             if next_run_times:
                 nearest = min(next_run_times)
                 sleep_seconds = max((nearest - datetime.now(timezone.utc)).total_seconds(), 1)
+            else:
+                sleep_seconds = 60 
 
             time.sleep(sleep_seconds)
 
