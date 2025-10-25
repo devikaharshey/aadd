@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -28,6 +28,7 @@ import {
   Upload,
   X,
   Camera,
+  AlertCircle,
 } from "lucide-react";
 
 // Animations
@@ -56,7 +57,7 @@ const itemVariants = {
 };
 
 export default function SignupPage() {
-  const { signup } = useAuth();
+  const { user, signup } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -64,8 +65,69 @@ export default function SignupPage() {
   const [pfpPreview, setPfpPreview] = useState("");
   const [loading, setLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  // Redirect If Signed In
+  useEffect(() => {
+    if (user) {
+      router.push("/dashboard");
+    }
+  }, [user, router]);
+
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {};
+
+    if (!username.trim()) {
+      newErrors.username = "Username is required.";
+    } else if (username.length < 3) {
+      newErrors.username = "Username must be at least 3 characters long.";
+    }
+
+    if (!email.trim()) {
+      newErrors.email = "Email is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Please enter a valid email address.";
+    }
+
+    if (!password.trim()) {
+      newErrors.password = "Password is required.";
+    } else {
+      const passwordErrors = [];
+      if (password.length < 8) passwordErrors.push("at least 8 characters");
+      if (!/[A-Z]/.test(password)) passwordErrors.push("one uppercase letter");
+      if (!/[a-z]/.test(password)) passwordErrors.push("one lowercase letter");
+      if (!/[0-9]/.test(password)) passwordErrors.push("one number");
+      if (!/[!@#$%^&*(),.?":{}|<>]/.test(password))
+        passwordErrors.push("one special character");
+
+      if (passwordErrors.length > 0) {
+        newErrors.password = `Password must include: ${passwordErrors.join(
+          ", "
+        )}.`;
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleBlur = (field: string) => {
+    setTouched({ ...touched, [field]: true });
+    validateForm();
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    if (field === "username") setUsername(value);
+    if (field === "email") setEmail(value);
+    if (field === "password") setPassword(value);
+
+    if (touched[field]) {
+      validateForm();
+    }
+  };
 
   // File Selection Handler
   const handleFileSelect = (file: File | null): void => {
@@ -125,7 +187,13 @@ export default function SignupPage() {
   ): Promise<void> => {
     e.preventDefault();
 
-    if (!email || !password || !username) {
+    setTouched({
+      username: true,
+      email: true,
+      password: true,
+    });
+
+    if (!validateForm()) {
       return;
     }
 
@@ -293,12 +361,27 @@ export default function SignupPage() {
                     placeholder="Choose your username"
                     value={username}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setUsername(e.target.value)
+                      handleInputChange("username", e.target.value)
                     }
-                    className="bg-white/5 border-white/10 focus:border-primary/50 text-white placeholder:text-gray-500"
+                    onBlur={() => handleBlur("username")}
+                    className={`bg-white/5 border-white/10 focus:border-primary/50 text-white placeholder:text-gray-500 ${
+                      touched.username && errors.username
+                        ? "border-red-500/50"
+                        : ""
+                    }`}
                     disabled={loading}
                     required
                   />
+                  {touched.username && errors.username && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-1 text-red-400 text-sm"
+                    >
+                      <AlertCircle className="w-4 h-4" />
+                      <span>{errors.username}</span>
+                    </motion.div>
+                  )}
                 </div>
 
                 {/* Email */}
@@ -316,12 +399,25 @@ export default function SignupPage() {
                     placeholder="Enter your email"
                     value={email}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setEmail(e.target.value)
+                      handleInputChange("email", e.target.value)
                     }
-                    className="bg-white/5 border-white/10 focus:border-primary/50 text-white placeholder:text-gray-500"
+                    onBlur={() => handleBlur("email")}
+                    className={`bg-white/5 border-white/10 focus:border-primary/50 text-white placeholder:text-gray-500 ${
+                      touched.email && errors.email ? "border-red-500/50" : ""
+                    }`}
                     disabled={loading}
                     required
                   />
+                  {touched.email && errors.email && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-1 text-red-400 text-sm"
+                    >
+                      <AlertCircle className="w-4 h-4" />
+                      <span>{errors.email}</span>
+                    </motion.div>
+                  )}
                 </div>
 
                 {/* Password */}
@@ -339,12 +435,27 @@ export default function SignupPage() {
                     placeholder="Create a strong password"
                     value={password}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setPassword(e.target.value)
+                      handleInputChange("password", e.target.value)
                     }
-                    className="bg-white/5 border-white/10 focus:border-primary/50 text-white placeholder:text-gray-500"
+                    onBlur={() => handleBlur("password")}
+                    className={`bg-white/5 border-white/10 focus:border-primary/50 text-white placeholder:text-gray-500 ${
+                      touched.password && errors.password
+                        ? "border-red-500/50"
+                        : ""
+                    }`}
                     disabled={loading}
                     required
                   />
+                  {touched.password && errors.password && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-start gap-1 text-red-400 text-sm"
+                    >
+                      <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <span>{errors.password}</span>
+                    </motion.div>
+                  )}
                 </div>
 
                 {/* Submit Button */}

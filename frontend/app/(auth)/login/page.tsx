@@ -23,6 +23,7 @@ import {
   ArrowRight,
   Sparkles,
   CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 
 // Animations
@@ -55,6 +56,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
   const router = useRouter();
 
   // Redirect If Logged In
@@ -64,10 +67,48 @@ export default function LoginPage() {
     }
   }, [user, router]);
 
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {};
+
+    if (!email.trim()) {
+      newErrors.email = "Email is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Please enter a valid email address.";
+    }
+
+    if (!password.trim()) {
+      newErrors.password = "Password is required.";
+    } else if (password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters long.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleBlur = (field: string) => {
+    setTouched({ ...touched, [field]: true });
+    validateForm();
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    if (field === "email") setEmail(value);
+    if (field === "password") setPassword(value);
+
+    if (touched[field]) {
+      validateForm();
+    }
+  };
+
   const handleLogin = async (e?: React.FormEvent) => {
     e?.preventDefault();
 
-    if (!email || !password) {
+    setTouched({
+      email: true,
+      password: true,
+    });
+
+    if (!validateForm()) {
       return;
     }
 
@@ -189,11 +230,24 @@ export default function LoginPage() {
                     type="email"
                     placeholder="Enter your email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="bg-white/5 border-white/10 focus:border-primary/50 text-white placeholder:text-gray-500"
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    onBlur={() => handleBlur("email")}
+                    className={`bg-white/5 border-white/10 focus:border-primary/50 text-white placeholder:text-gray-500 ${
+                      touched.email && errors.email ? "border-red-500/50" : ""
+                    }`}
                     disabled={loading}
                     required
                   />
+                  {touched.email && errors.email && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-1 text-red-400 text-sm"
+                    >
+                      <AlertCircle className="w-4 h-4" />
+                      <span>{errors.email}</span>
+                    </motion.div>
+                  )}
                 </div>
 
                 {/* Password */}
@@ -210,11 +264,28 @@ export default function LoginPage() {
                     type="password"
                     placeholder="Enter your password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="bg-white/5 border-white/10 focus:border-primary/50 text-white placeholder:text-gray-500"
+                    onChange={(e) =>
+                      handleInputChange("password", e.target.value)
+                    }
+                    onBlur={() => handleBlur("password")}
+                    className={`bg-white/5 border-white/10 focus:border-primary/50 text-white placeholder:text-gray-500 ${
+                      touched.password && errors.password
+                        ? "border-red-500/50"
+                        : ""
+                    }`}
                     disabled={loading}
                     required
                   />
+                  {touched.password && errors.password && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-1 text-red-400 text-sm"
+                    >
+                      <AlertCircle className="w-4 h-4" />
+                      <span>{errors.password}</span>
+                    </motion.div>
+                  )}
                 </div>
 
                 {/* Submit Button */}
