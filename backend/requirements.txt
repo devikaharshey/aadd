@@ -1,0 +1,14 @@
+flask
+flask-cors
+requests
+python-dotenv
+cryptography
+appwrite
+sentence-transformers
+scikit-learn
+numpy
+pandas
+opencv-python
+Pillow
+imagehash
+gunicorn
