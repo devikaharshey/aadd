@@ -1,11 +1,11 @@
 # utils/reminders_manager.py
-import os, time, requests, smtplib, threading
+import os, time, requests, threading
 from datetime import datetime, timedelta, timezone
 from utils.appwrite_client import get_database_client, get_appwrite_client
 from appwrite.query import Query
 from appwrite.services.users import Users
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 APPWRITE_DATABASE_ID = os.getenv("APPWRITE_DATABASE_ID", "default")
 USER_PROJECTS_COLLECTION = os.getenv("APPWRITE_USER_PROJECTS_COLLECTION", "user_projects")
@@ -13,6 +13,8 @@ REMINDER_COLLECTION = os.getenv("APPWRITE_REMINDER_COLLECTION", "reminders")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5000")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")  
 
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+SENDER_EMAIL = os.getenv("SENDER_EMAIL")
 
 SCHEDULE_MAP = {
     "30min": 30 * 60,       
@@ -33,34 +35,24 @@ def get_user_email(user_id: str) -> str | None:
         print(f"Error fetching email for user {user_id}: {e}")
         return None
 
-
 def send_email(to_email: str, subject: str, message: str):
     try:
-        smtp_server = "smtp.gmail.com"
-        smtp_port = 587
-        sender_email = os.getenv("SMTP_USER")       
-        sender_password = os.getenv("SMTP_PASS")    
-
-        if not sender_email or not sender_password:
-            print("❌ Email credentials not configured")
+        if not SENDGRID_API_KEY or not SENDER_EMAIL:
+            print("❌ SendGrid credentials not configured")
             return
 
-        msg = MIMEMultipart()
-        msg["From"] = sender_email
-        msg["To"] = to_email
-        msg["Subject"] = subject
-        msg.attach(MIMEText(message, "html"))
-
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(sender_email, sender_password)
-        server.send_message(msg)
-        server.quit()
+        mail = Mail(
+            from_email=SENDER_EMAIL,
+            to_emails=to_email,
+            subject=subject,
+            html_content=message
+        )
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        sg.send(mail)
         print(f"📧 Email sent to {to_email}")
 
     except Exception as e:
         print(f"❌ Failed to send email: {e}")
-
 
 def run_scan_reminder(reminder):
     """Perform duplicate scan for a project when reminder triggers."""
@@ -139,7 +131,6 @@ def run_scan_reminder(reminder):
 
     except Exception as e:
         print(f"❌ Error running reminder: {e}")
-
 
 def reminder_scheduler():
     """Background scheduler thread that periodically checks reminders and runs them on time."""
