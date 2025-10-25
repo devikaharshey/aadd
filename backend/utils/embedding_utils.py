@@ -1,32 +1,33 @@
 # utils/embedding_utils.py
-import os
 import numpy as np
 from typing import List, Dict
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
 
-CACHE_DIR = "/tmp/hf_cache"
-os.environ["HF_HOME"] = CACHE_DIR
-os.environ["TRANSFORMERS_CACHE"] = CACHE_DIR
-os.environ["HF_DATASETS_CACHE"] = CACHE_DIR
-os.makedirs(CACHE_DIR, exist_ok=True)
-
-MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-
-try:
-    model = SentenceTransformer(MODEL_NAME)
-except Exception as e:
-    raise RuntimeError(f"Failed to load SentenceTransformer model: {e}")
-
+MODEL_PATH = "./models/all-MiniLM-L6-v2"
+model = SentenceTransformer(MODEL_PATH)
 
 def get_text_embedding(text: str) -> np.ndarray:
+    """
+    Generate an embedding for the given text using sentence-transformers.
+    Returns a NumPy array of embedding values.
+    """
     embedding = model.encode(text, convert_to_numpy=True)
     return np.array(embedding, dtype=np.float32)
-
 
 def detect_textual_duplicates(
     records: List[Dict[str, str]], threshold: float = 0.9
 ) -> List[List[Dict[str, str]]]:
+    """
+    Detects textual duplicates using cosine similarity between embeddings.
+    
+    Args:
+        records: list of dicts like [{ "id": "123", "text": "some text" }]
+        threshold: similarity threshold for considering duplicates.
+    
+    Returns:
+        List of clusters, each a list of duplicate records.
+    """
     if not records:
         return []
 
