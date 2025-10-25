@@ -1,12 +1,24 @@
 # utils/embedding_utils.py
+import os
 import numpy as np
 from typing import List, Dict
-from sklearn.metrics.pairwise import cosine_similarity  # type: ignore
+from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
 
+os.environ["HF_HOME"] = "/tmp/hf_cache"
+os.environ["TRANSFORMERS_CACHE"] = "/tmp/hf_cache"
+os.environ["HF_DATASETS_CACHE"] = "/tmp/hf_cache"
+os.makedirs("/tmp/hf_cache", exist_ok=True)
 
-MODEL_NAME = "all-MiniLM-L6-v2"
-model = SentenceTransformer(MODEL_NAME)
+MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+
+try:
+    model = SentenceTransformer(MODEL_NAME)
+except Exception as e:
+    print(f"[Warning] Could not load model from Hugging Face Hub: {e}")
+    print("Attempting to load from local path './models/all-MiniLM-L6-v2'...")
+    # fallback if model manually added inside project
+    model = SentenceTransformer("./models/all-MiniLM-L6-v2")
 
 
 def get_text_embedding(text: str) -> np.ndarray:
