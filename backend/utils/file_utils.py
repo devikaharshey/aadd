@@ -11,7 +11,6 @@ from PIL import Image
 from collections import defaultdict
 from numpy.linalg import norm
 
-
 # Handling imports for dependencies
 try:
     LANCZOS = Image.Resampling.LANCZOS
