@@ -2,7 +2,7 @@
 
 A full-stack web application designed to detect, visualize, and manage duplicates within your Appwrite projects' databases and storage buckets using AI-powered algorithms and perceptual hashing, featuring a gamified user experience.
 
-<img width="1917" height="857" alt="Screenshot 2025-10-24 215057" src="https://github.com/user-attachments/assets/b62914b4-76ce-4ad7-9579-299b63e4ea8c" />
+<img width="1917" height="857" alt="Screenshot 2025-10-24 215057" src="https://github.com/user-attachments/assets/dac96831-47be-4d7e-ac9d-a6ea5a442700" />
 
 ---
 
