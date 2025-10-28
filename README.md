@@ -174,7 +174,7 @@ Navigate to the **"Connect Project"** page and enter:
 
 ### 3. Dashboard
 
-View your connected projects with quick stats, manage automated scan reminders, and access recent activities.<br/>
+View your connected projects with quick stats, manage automated scan reminders, and access recent activities.<br/><br/>
 <b>𝗡𝗢𝗧𝗘:</b> The emails may land in SPAM, so keep checking for it there.
 
 ### 4. Select Project for Scan
