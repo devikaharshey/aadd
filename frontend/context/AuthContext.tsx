@@ -74,6 +74,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         username
       );
 
+      await account.createEmailPasswordSession(email, password);
+
       if (pfpFile) {
         try {
           await storage.createFile(BUCKET_ID, `pfp_${newUser.$id}`, pfpFile);
@@ -82,8 +84,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           toast.warning("Account created, but profile picture upload failed");
         }
       }
-
-      await account.createEmailPasswordSession(email, password);
 
       await account.createVerification(`${window.location.origin}/verify`);
 
