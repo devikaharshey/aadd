@@ -4,6 +4,10 @@ A full-stack web application designed to detect, visualize, and manage duplicate
 
 <img width="1917" height="857" alt="Screenshot 2025-10-24 215057" src="https://github.com/user-attachments/assets/dac96831-47be-4d7e-ac9d-a6ea5a442700" />
 
+### Live App Link - [https://appwrite-ai-duplicates-detector-aadd.appwrite.network/](https://appwrite-ai-duplicates-detector-aadd.appwrite.network/)
+
+### Live Demo Link - [https://youtu.be/VjmDfk_CCQ8](https://youtu.be/VjmDfk_CCQ8)
+
 ---
 
 ## 📑 Table of Contents
