@@ -28,8 +28,20 @@ const nextConfig: NextConfig = {
         port: "",
         pathname: "/v1/storage/**",
       },
+      {
+        protocol: "https",
+        hostname: "sgp.cloud.appwrite.io",
+        port: "",
+        pathname: "/v1/storage/**",
+      },
+      {
+        protocol: "https",
+        hostname: "tor.cloud.appwrite.io",
+        port: "",
+        pathname: "/v1/storage/**",
+      },
     ],
-  }
+  },
 };
 
 export default nextConfig;
