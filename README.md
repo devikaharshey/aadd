@@ -175,7 +175,9 @@ Navigate to the **"Connect Project"** page and enter:
 ### 3. Dashboard
 
 View your connected projects with quick stats, manage automated scan reminders, and access recent activities.<br/><br/>
-<b>𝗡𝗢𝗧𝗘:</b> The emails may land in SPAM, so keep checking for it there.
+<b>𝗡𝗢𝗧𝗘𝗦:</b> 
+- The emails may land in SPAM, so keep checking for it there.
+- You can only create upto 5 reminders to keep it optimized and avoid overloading the system.
 
 ### 4. Select Project for Scan
 
@@ -194,6 +196,7 @@ Click a **"Scan"** button to navigate to the results page (`/duplicates/<project
 - Loading state during scan
 - Detected duplicates with similarity scores
 - Visual representations of duplicate distribution
+- View in Console/Open in Appwrite button to view the files in Appwrite Console
 
 ### 7. Manage Duplicates
 
